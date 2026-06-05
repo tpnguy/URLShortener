@@ -69,6 +69,11 @@ func main() {
 	if err := rdb.Ping(ctx).Err(); err != nil {
 		log.Fatal("redis:", err)
 	}
+	
+	if os.Getenv("JWT_SECRET") == "" {
+		log.Fatal("JWT_SECRET environment variable is required")
+	}
+
 	app := &App{
 		DB:  db,
 		RDB: rdb,
@@ -92,7 +97,7 @@ func main() {
 
 	mux.HandleFunc("POST /register", rl(http.HandlerFunc(app.registerUser)))
 	mux.HandleFunc("POST /login", rl(http.HandlerFunc(app.loginUser)))
-	mux.HandleFunc("GET /{shortCode}", app.redirectHandler)
+	mux.HandleFunc("GET /{shortCode}", rl(http.HandlerFunc(app.redirectHandler)))
 	mux.HandleFunc("GET /health", app.getHealth)
 	mux.HandleFunc("POST /urls", rl(authMiddleware(http.HandlerFunc(app.postURLHandler))))
 	mux.HandleFunc("GET /urls", authMiddleware(http.HandlerFunc(app.listURLs)))

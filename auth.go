@@ -70,13 +70,13 @@ func authMiddleware(next http.Handler) http.HandlerFunc {
 func rateLimitMiddleware(rdb *redis.Client, limit int, window time.Duration) func(http.Handler) http.HandlerFunc {
 	return func(next http.Handler) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			// Prefer X-Real-IP set by nginx; fall back to RemoteAddr for direct connections
-			ip := r.Header.Get("X-Real-IP")
+			// Prefer X-Real-IP set by nginx; validate it's a real IP before trusting it
+			ip, _, _ := net.SplitHostPort(r.RemoteAddr)
 			if ip == "" {
-				ip, _, _ = net.SplitHostPort(r.RemoteAddr)
-				if ip == "" {
-					ip = r.RemoteAddr
-				}
+				ip = r.RemoteAddr
+			}
+			if forwarded := r.Header.Get("X-Real-IP"); forwarded != "" && net.ParseIP(forwarded) != nil {
+				ip = forwarded
 			}
 
 			key := "ratelimit:" + ip

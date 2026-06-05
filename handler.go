@@ -50,6 +50,9 @@ func (a *App) postURLHandler(w http.ResponseWriter, r *http.Request) {
 		LongURL   string  `json:"long_url"`
 		ExpiresAt *string `json:"expires_at"`
 	}
+	
+	// Request Body size limit
+	r.Body = http.MaxBytesReader(w,r.Body, 1<<20)
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid request body", http.StatusBadRequest)
@@ -122,6 +125,9 @@ func (a *App) registerUser(w http.ResponseWriter, r *http.Request) {
 		Email    string `json:"email"`
 		Password string `json:"password"`
 	}
+
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
+
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid request body", http.StatusBadRequest)
 		return
@@ -157,6 +163,9 @@ func (a *App) loginUser(w http.ResponseWriter, r *http.Request) {
 		Email    string `json:"email"`
 		Password string `json:"password"`
 	}
+
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
+
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid request body", http.StatusBadRequest)
 		return

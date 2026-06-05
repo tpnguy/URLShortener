@@ -2,7 +2,7 @@
 
 A production-ready URL shortening service built with Go, PostgreSQL, and Redis.
 
-**Live demo:** [http://127.0.0.1:80/health]
+**Live demo:** [http://127.0.0.1:80/health] (if server is running)
 
 ---
 
