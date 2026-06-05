@@ -112,10 +112,13 @@ TEST_POSTGRES_CONN="host=localhost user=myuser password=mypassword dbname=mydb s
 ## Tradeoffs & Design Decisions
 
 **Why async click flushing?**
+
 Async click flushing exists in this project to ensure that the Redis buffer makes the user experience less delayed. A traditional synchronous DB write for PostgreSQL would require the insert function for a click have to go through a network round trip to the DB, acquiring a write lock, a WAL (write-ahead log) entry, and wait for acknowledgement. These subprocesses can take a long time for a heavy input/output based project like this since it blocks up queues. So for that reason, a Redis buffer is introduced to provide sub-milisecond in memory operation. It's seen by every process, allowing for quicker reads and writes. Every thirty seconds, it "flushes" this log of URLs and inserts into the DB, reducing load. One of the only cons that I can think of are that within this 30 seconds, if anything were to happen to the application -- be it crash or whatnot, we'll lose those 30 seconds of clicks. This isn't that bad for click analytics.
 
 **Why JWT over sessions?**
+
 The reason why JWT is used over sessions is because it's stateless and produces a token that should be used as truth for verification. This reduces the resources needed to make an operation, since it bypasses the round-trip to the DB. The tradeoff is that token cannot be changed when generated and sensitive payloads are prone to breaches, but this project uses a 30 minute timer for tokens and doesn't send sensitive information, making JWT an appealing choice.
 
 **What would you change if this needed to handle 10x the traffic?**
+
 I'd scale horizontally with nginx and mostly change the rate limiting to nginx as well since that's supported by people with more experience than me and is just overall better than a homemade version. Postgres connections are expensive, so I'd also implement some sort of connection pooling like pgbouncer to compile all of the connections together and reuse them. If there were a bunch of traffic, that might overwhelm the Postgres connection but with pgbouncer centralizing everything and distributing to the connections that are underutilized, it'll be able to handle load.
