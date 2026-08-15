@@ -103,7 +103,6 @@ func main() {
 	mux.HandleFunc("GET /urls", authMiddleware(http.HandlerFunc(app.listURLs)))
 	mux.HandleFunc("DELETE /urls/{shortCode}", authMiddleware(http.HandlerFunc(app.deleteURL)))
 
-
 	log.Println("Server running on :8080")
 	log.Fatal(http.ListenAndServe(":8080", mux))
 }

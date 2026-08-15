@@ -1,0 +1,65 @@
+name: Main Line
+
+on:
+    pull_request:
+        branches: [master]
+    push:
+        branches: [master]
+jobs:
+    test:
+        name: VM Test
+        runs-on: ubuntu-latest
+        services:
+            postgres:
+                image: postgres:17-alpine
+                env:
+                    POSTGRES_USER: myuser
+                    POSTGRES_PASSWORD: mypassword
+                    POSTGRES_DB: mydb
+                ports:
+                    - 5432:5432
+                options: >-
+                    --health-cmd pg_isready
+                    --health-interval 5s
+                    --health-timeout 5s
+                    --health-retries 5
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+            - name: Setup Go
+              uses: actions/setup-go@v5
+              with:
+                go-version-file: go.mod 
+            - name: Vet
+              run: go vet ./...
+            - name: Build
+              run: go build ./...
+            - name: Test
+              run: go test ./... -v
+              env:
+                TEST_POSTGRES_CONN: "host=localhost user=myuser password=mypassword dbname=mydb sslmode=disable"
+    build-and-push:
+        name: Build and Push
+        needs: test
+        if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+        runs-on: ubuntu-latest
+        permissions:
+            contents: read
+            packages: write
+        steps:
+            - name: Checkout Code
+              uses: actions/checkout@v4
+            - name: Log in to Github CR
+              uses: docker/login-action@v3
+              with:
+                registry: ghcr.io
+                username: ${{ github.actor }}
+                password: ${{ secrets.GITHUB_TOKEN }}
+            - name: Build and push image
+              uses: docker/build-push-action@v6
+              with:
+                context: .
+                push: true
+                tags: |
+                    ghcr.io/tpnguy/urlshortener:latest
+                    ghcr.io/tpnguy/urlshortener:${{ github.sha }}
